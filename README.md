@@ -49,3 +49,7 @@ This roadmap outlines the planned features for the Spring Boot E-commerce API.
 
 -   [ ] **Caching**
   - [ ] Implement caching strategies to improve performance (e.g., for products, categories).
+
+-   [ ] **Docker**
+  - [ ] Add support for Docker
+
