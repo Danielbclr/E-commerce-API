@@ -2,10 +2,14 @@ package com.danbramos.e_commerce_api.user;
 
 import com.danbramos.e_commerce_api.role.Role;
 import com.danbramos.e_commerce_api.role.RoleRepository;
+import com.danbramos.e_commerce_api.shoppingcart.ShoppingCart;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Import Slf4j for logging
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -45,12 +49,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public void saveUser(UserRegistrationDTO userDto) {
         log.info("Attempting to save new user with email: {}", userDto.email());
         User user = new User();
-        user.setName(userDto.name()); // Simpler mapping
+        user.setName(userDto.name());
         user.setEmail(userDto.email());
         user.setPassword(passwordEncoder.encode(userDto.password()));
 
         Role userRole = checkAndCreateRole("ROLE_USER");
         user.setRoles(Arrays.asList(userRole));
+
+        ShoppingCart cart = new ShoppingCart();
+        user.setShoppingCart(cart);
 
         userRepository.save(user);
         log.info("Successfully saved new user with email: {}", userDto.email());
@@ -88,6 +95,91 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         log.debug("Found {} users", userDtos.size());
         return userDtos;
     }
+
+    /**
+     * Deletes a user by their ID.
+     * Prevents deletion if the user is an ADMIN or if the admin tries to delete themselves.
+     *
+     * @param id The ID of the user to delete.
+     * @throws EntityNotFoundException  if the user is not found.
+     * @throws IllegalArgumentException if attempting to delete an admin or self.
+     */
+    @Override
+    public void deleteUserById(Long id) {
+        log.info("Attempting to delete user with ID: {}", id);
+
+        // Get current authenticated user's email (important for self-deletion check)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentAdminEmail = authentication.getName();
+
+        User userToDelete = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Deletion failed: User not found with ID: {}", id);
+                    return new EntityNotFoundException("User not found with ID: " + id);
+                });
+
+        // Prevent self-deletion
+        if (userToDelete.getEmail().equals(currentAdminEmail)) {
+            log.warn("Deletion failed: Admin user ID: {} attempted to delete themselves.", id);
+            throw new IllegalArgumentException("Admin users cannot delete their own account.");
+        }
+
+        // Prevent deletion of any user with ADMIN role
+        boolean isAdmin = userToDelete.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("ROLE_ADMIN"));
+        if (isAdmin) {
+            log.warn("Deletion failed: Attempted to delete an ADMIN user with ID: {}", id);
+            throw new IllegalArgumentException("Cannot delete users with the ADMIN role.");
+        }
+
+        // Proceed with deletion
+        // Cascading should handle related entities like ShoppingCart due to CascadeType.ALL and orphanRemoval=true
+        userRepository.delete(userToDelete); // Or deleteById(id)
+        log.info("Successfully deleted user with ID: {}", id);
+    }
+
+    /**
+     * Deletes all users who do not have the 'ROLE_ADMIN'.
+     *
+     * @return The number of users deleted.
+     * @throws IllegalStateException if the 'ROLE_ADMIN' cannot be found.
+     */
+    // Inside UserServiceImpl.java
+
+    @Override
+    @Transactional
+    public long deleteNonAdminUsers() {
+        log.warn("Attempting to delete all non-ADMIN users.");
+
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN");
+        if (adminRole == null) {
+            log.error("CRITICAL: 'ROLE_ADMIN' not found in the database. Cannot proceed with deletion.");
+            throw new IllegalStateException("'ROLE_ADMIN' role not found.");
+        }
+
+        // Step 1: Find the users to delete
+        List<User> usersToDelete = userRepository.findUsersByRolesNotContaining(adminRole);
+        long count = usersToDelete.size();
+
+        if (count > 0) {
+            // Extract their IDs
+            List<Long> idsToDelete = usersToDelete.stream()
+                    .map(User::getId) // Make sure User entity has getId()
+                    .collect(Collectors.toList());
+
+            log.warn("The following {} non-ADMIN users will be deleted: {}", count,
+                    usersToDelete.stream().map(User::getEmail).collect(Collectors.toList()));
+
+            // Step 2: Delete users by their IDs
+            userRepository.deleteUsersWithIds(idsToDelete); // Use the new repository method
+
+            log.warn("Successfully deleted {} non-ADMIN users.", count);
+        } else {
+            log.info("No non-ADMIN users found to delete.");
+        }
+        return count;
+    }
+
 
     /**
      * Locates the user based on the username (email in this case) for Spring Security authentication.

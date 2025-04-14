@@ -4,11 +4,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service
 public interface UserService {
     void saveUser(UserRegistrationDTO userDto);
-
     User findUserByEmail(String email);
-
     List<UserDTO> findAllUsers();
+    void deleteUserById(Long id);
+    long deleteNonAdminUsers();
 }

@@ -18,11 +18,11 @@ This roadmap outlines the planned features for the Spring Boot E-commerce API.
   - [x] Login: Authenticate users.
   - [x] Authorization: Implement role-based access control (e.g., ADMIN, CUSTOMER).
 
--   [ ] **Shopping Cart**
-  - [ ] Add to Cart: Add products to a user's cart.
-  - [ ] View Cart: Display the contents of the current user's cart.
-  - [ ] Update Cart: Modify product quantities in the cart.
-  - [ ] Remove from Cart: Remove items from the cart.
+-   [x] **Shopping Cart**
+  - [x] Add to Cart: Add products to a user's cart.
+  - [x] View Cart: Display the contents of the current user's cart.
+  - [x] Update Cart: Modify product quantities in the cart.
+  - [x] Remove from Cart: Remove items from the cart.
 
 -   [ ] **Order Management**
   - [ ] Create Order: Place an order from the shopping cart contents.
@@ -39,7 +39,7 @@ This roadmap outlines the planned features for the Spring Boot E-commerce API.
 -   [x] **Error Handling**
   - [ ] Implement consistent and informative error handling.
   - [ ] Custom Exception objects
-  
+
 -   [x] **API Documentation**
   - [x] Integrate Swagger/OpenAPI for API documentation.
 
@@ -52,4 +52,3 @@ This roadmap outlines the planned features for the Spring Boot E-commerce API.
 
 -   [ ] **Docker**
   - [ ] Add support for Docker
-
