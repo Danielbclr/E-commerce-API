@@ -93,11 +93,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             cartItem = existingItemOptional.get();
             int currentQuantityInCart = cartItem.getQuantity();
             int requestedTotalQuantity = currentQuantityInCart + quantity;
-
-            if (requestedTotalQuantity > currentStock) {
-                log.warn("Insufficient stock for Product ID: {}. Requested total: {}, Available: {}", productId, requestedTotalQuantity, currentStock);
-                throw new InsufficientStockException("Insufficient stock for product: " + product.getName() + ". Available: " + currentStock + ", Requested total: " + requestedTotalQuantity);
-            }
+            productService.verifyStockAvailability(product, requestedTotalQuantity);
 
             log.debug("Product ID: {} already in cart ID: {}. Updating quantity.", productId, cart.getId());
             cartItem.setQuantity(requestedTotalQuantity);
@@ -152,13 +148,8 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         }
 
         Product product = cartItem.getProduct();
-        int currentStock = product.getStockQuantity();
-        log.debug("Checking stock for Product ID: {}. Available: {}", product.getId(), currentStock);
+        productService.verifyStockAvailability(product, quantity); // Throws if insufficient
 
-        if (quantity > currentStock) {
-            log.warn("Insufficient stock for Product ID: {}. Requested: {}, Available: {}", product.getId(), quantity, currentStock);
-            throw new InsufficientStockException("Insufficient stock for product: " + product.getName() + ". Available: " + currentStock + ", Requested: " + quantity);
-        }
 
         cartItem.setQuantity(quantity);
 

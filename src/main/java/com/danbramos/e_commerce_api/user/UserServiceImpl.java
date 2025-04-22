@@ -5,7 +5,7 @@ import com.danbramos.e_commerce_api.role.RoleRepository;
 import com.danbramos.e_commerce_api.shoppingcart.ShoppingCart;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Import Slf4j for logging
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -108,7 +108,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public void deleteUserById(Long id) {
         log.info("Attempting to delete user with ID: {}", id);
 
-        // Get current authenticated user's email (important for self-deletion check)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentAdminEmail = authentication.getName();
 
@@ -118,13 +117,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     return new EntityNotFoundException("User not found with ID: " + id);
                 });
 
-        // Prevent self-deletion
         if (userToDelete.getEmail().equals(currentAdminEmail)) {
             log.warn("Deletion failed: Admin user ID: {} attempted to delete themselves.", id);
             throw new IllegalArgumentException("Admin users cannot delete their own account.");
         }
 
-        // Prevent deletion of any user with ADMIN role
         boolean isAdmin = userToDelete.getRoles().stream()
                 .anyMatch(role -> role.getName().equals("ROLE_ADMIN"));
         if (isAdmin) {
@@ -132,8 +129,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new IllegalArgumentException("Cannot delete users with the ADMIN role.");
         }
 
-        // Proceed with deletion
-        // Cascading should handle related entities like ShoppingCart due to CascadeType.ALL and orphanRemoval=true
         userRepository.delete(userToDelete); // Or deleteById(id)
         log.info("Successfully deleted user with ID: {}", id);
     }
@@ -144,8 +139,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
      * @return The number of users deleted.
      * @throws IllegalStateException if the 'ROLE_ADMIN' cannot be found.
      */
-    // Inside UserServiceImpl.java
-
     @Override
     @Transactional
     public long deleteNonAdminUsers() {
@@ -157,21 +150,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new IllegalStateException("'ROLE_ADMIN' role not found.");
         }
 
-        // Step 1: Find the users to delete
         List<User> usersToDelete = userRepository.findUsersByRolesNotContaining(adminRole);
         long count = usersToDelete.size();
 
         if (count > 0) {
-            // Extract their IDs
-            List<Long> idsToDelete = usersToDelete.stream()
-                    .map(User::getId) // Make sure User entity has getId()
-                    .collect(Collectors.toList());
-
             log.warn("The following {} non-ADMIN users will be deleted: {}", count,
                     usersToDelete.stream().map(User::getEmail).collect(Collectors.toList()));
 
-            // Step 2: Delete users by their IDs
-            userRepository.deleteUsersWithIds(idsToDelete); // Use the new repository method
+            userRepository.deleteAll(usersToDelete);
 
             log.warn("Successfully deleted {} non-ADMIN users.", count);
         } else {
@@ -179,7 +165,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         return count;
     }
-
 
     /**
      * Locates the user based on the username (email in this case) for Spring Security authentication.
@@ -204,8 +189,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                user.getPassword(), // Provide the encoded password
-                authorities);       // Provide the authorities (roles)
+                user.getPassword(),
+                authorities);
     }
 
     /**
@@ -228,7 +213,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
      */
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName())) // Create authority from role name
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .collect(Collectors.toList());
     }
 

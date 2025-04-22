@@ -1,20 +1,20 @@
 package com.danbramos.e_commerce_api.product;
 
-import io.swagger.v3.oas.annotations.Operation; // Import OpenAPI annotations
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag; // Import Tag annotation
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Add logging
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType; // Import MediaType for POST/PUT
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // For method-level security
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -77,7 +77,7 @@ public class ProductController {
                     log.info("Found product with ID: {}", id);
                     return ResponseEntity.ok(product);
                 })
-                .orElseGet(() -> { // Use orElseGet for lazy evaluation
+                .orElseGet(() -> {
                     log.warn("Product not found with ID: {}", id);
                     return ResponseEntity.notFound().build();
                 });
@@ -92,26 +92,25 @@ public class ProductController {
      * @throws ResponseStatusException with status 500 if an unexpected error occurs.
      */
     @Operation(summary = "Create a new product", description = "Adds a new product to the catalog. Requires ADMIN role.",
-            security = @SecurityRequirement(name = "basicAuth")) // Reference security scheme defined elsewhere (e.g., @OpenAPIDefinition)
+            security = @SecurityRequirement(name = "basicAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Product created successfully",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = Product.class))),
             @ApiResponse(responseCode = "400", description = "Invalid product data provided",
-                    content = @Content), // Bad Request if validation fails
+                    content = @Content),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required", content = @Content),
             @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient privileges (ADMIN role required)", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error during product creation", content = @Content)
     })
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE) // Specify consumes/produces
-    @PreAuthorize("hasRole('ADMIN')") // Enforce ADMIN role at method level
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> createProduct(
             @Parameter(description = "Product data to create", required = true,
                     schema = @Schema(implementation = ProductDTO.class))
             @Valid @RequestBody ProductDTO productDto) {
         log.info("Request received to create product: {}", productDto.name());
         try {
-            // Map DTO to Entity - Consider using a mapping library like MapStruct
             Product newProduct = new Product();
             newProduct.setName(productDto.name());
             newProduct.setDescription(productDto.description());
@@ -124,7 +123,6 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
         } catch (Exception e) {
             log.error("Error creating product '{}': {}", productDto.name(), e.getMessage(), e);
-            // Let Spring's default exception handling or a @ControllerAdvice handle this
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error creating product", e);
         }
     }
@@ -206,7 +204,6 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(
             @Parameter(description = "ID of the product to be deleted", required = true) @PathVariable Long id) {
         log.info("Request received to delete product with ID: {}", id);
-        // Check existence first to provide accurate 404
         if (productService.findProductById(id).isEmpty()) {
             log.warn("Product not found with ID {} during delete attempt", id);
             return ResponseEntity.notFound().build();
@@ -214,9 +211,8 @@ public class ProductController {
         try {
             productService.deleteProduct(id);
             log.info("Product deleted successfully with ID: {}", id);
-            return ResponseEntity.noContent().build(); // 204 No Content is standard for successful DELETE
+            return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            // Catch specific exceptions if possible (e.g., DataIntegrityViolationException)
             log.error("Error deleting product with ID {}: {}", id, e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting product", e);
         }

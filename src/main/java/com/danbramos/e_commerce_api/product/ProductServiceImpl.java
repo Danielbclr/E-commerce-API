@@ -1,5 +1,6 @@
 package com.danbramos.e_commerce_api.product;
 
+import com.danbramos.e_commerce_api.exception.InsufficientStockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -78,5 +79,19 @@ public class ProductServiceImpl implements ProductService {
          }
         productRepository.deleteById(id);
         log.info("Successfully deleted product with ID: {}", id);
+    }
+
+    @Override
+    public void verifyStockAvailability(Product product, int requestedQuantity) throws InsufficientStockException {
+        if (product.getStockQuantity() < requestedQuantity) {
+            log.warn("Insufficient stock for Product ID: {}. Requested: {}, Available: {}",
+                    product.getId(), requestedQuantity, product.getStockQuantity());
+            throw new InsufficientStockException(
+                    "Insufficient stock for product: " + product.getName() +
+                            ". Available: " + product.getStockQuantity() +
+                            ", Requested: " + requestedQuantity
+            );
+
+        }
     }
 }

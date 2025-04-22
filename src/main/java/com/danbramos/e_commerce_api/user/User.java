@@ -1,5 +1,6 @@
 package com.danbramos.e_commerce_api.user;
 
+import com.danbramos.e_commerce_api.order.Order;
 import com.danbramos.e_commerce_api.role.Role;
 import com.danbramos.e_commerce_api.shoppingcart.ShoppingCart;
 import jakarta.persistence.*;
@@ -34,6 +35,12 @@ public class User {
             inverseJoinColumns={@JoinColumn(name="ROLE_ID", referencedColumnName="ID")})
     private List<Role> roles = new ArrayList<>();
 
+    @OneToMany(
+            mappedBy = "user",
+            fetch = FetchType.LAZY
+    )
+    private List<Order> orderList;
+
     @OneToOne(
             mappedBy = "user",
             cascade = CascadeType.ALL,
@@ -45,12 +52,30 @@ public class User {
     public void setShoppingCart(ShoppingCart shoppingCart) {
         if (shoppingCart == null) {
             if (this.shoppingCart != null) {
-                this.shoppingCart.setUser(null); // Break the link on the other side
+                this.shoppingCart.setUser(null);
             }
         } else {
-            shoppingCart.setUser(this); // Set the link on the other side
+            shoppingCart.setUser(this);
         }
         this.shoppingCart = shoppingCart;
     }
 
+    public void addOrder(Order order) {
+        if(order == null) {
+            return;
+        }
+        if (orderList == null) {
+            orderList = new ArrayList<>();
+        }
+        orderList.add(order);
+        order.setUser(this);
+    }
+
+    public void removeOrder(Order order) {
+        if(order == null || orderList == null) {
+            return;
+        }
+        orderList.remove(order);
+        order.setUser(null);
+    }
 }

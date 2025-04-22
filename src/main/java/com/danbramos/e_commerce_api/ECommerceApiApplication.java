@@ -13,9 +13,8 @@ public class ECommerceApiApplication {
 		SpringApplication.run(ECommerceApiApplication.class, args);
 	}
 
-	@Bean // Define the PasswordEncoder bean here
+	@Bean
 	public PasswordEncoder passwordEncoder() {
-		// Use BCrypt for strong password hashing
 		return new BCryptPasswordEncoder();
 	}
 }

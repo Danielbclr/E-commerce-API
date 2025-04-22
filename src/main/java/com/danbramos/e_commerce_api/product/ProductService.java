@@ -1,5 +1,7 @@
 package com.danbramos.e_commerce_api.product;
 
+import com.danbramos.e_commerce_api.exception.InsufficientStockException;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -38,5 +40,7 @@ public interface ProductService {
      * @param id The ID of the product to delete.
      */
     void deleteProduct(Long id) throws Exception;
+
+    void verifyStockAvailability(Product product, int requestedQuantity) throws InsufficientStockException;
 
 }

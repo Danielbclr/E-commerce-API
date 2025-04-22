@@ -26,9 +26,9 @@ This roadmap outlines the planned features for the Spring Boot E-commerce API.
 - [x] **Remove from Cart:** Remove items from the cart.
 
 ### Order Management
-- [ ] **Create Order:** Place an order from the shopping cart contents.
-- [ ] **View Order History:** Allow users to list their past orders.
-- [ ] **View Order Details:** Show details of a specific order.
+- [x] **Create Order:** Place an order from the shopping cart contents.
+- [x] **View Order History:** Allow users to list their past orders.
+- [x] **View Order Details:** Show details of a specific order.
 
 ### Security
 - [x] Implement Spring Security for authentication and authorization.
